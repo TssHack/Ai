@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DarkAI Chat | طراحی شده توسط Ehsan Fazli</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --dark-bg: #0a0a0a;
+            --darker-bg: #050505;
+            --accent: #6e48aa;
+            --accent-light: #9d50bb;
+            --text: #e0e0e0;
+            --text-dim: #a0a0a0;
+            --success: #4CAF50;
+            --warning: #FFC107;
+            --error: #F44336;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Roboto Mono', monospace;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+        
+        #app {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--accent);
+            margin-bottom: 30px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(45deg, var(--accent), var(--accent-light));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            animation: gradientShift 5s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .user-id {
+            background-color: var(--darker-bg);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: var(--accent-light);
+            border: 1px solid var(--accent);
+        }
+        
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--darker-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: messageAppear 0.3s forwards;
+        }
+        
+        @keyframes messageAppear {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message-user {
+            display: flex;
+            justify-content: flex-end;
+        }
+        
+        .message-ai {
+            display: flex;
+            justify-content: flex-start;
+        }
+        
+        .message-content {
+            max-width: 80%;
+            padding: 12px 15px;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .message-user .message-content {
+            background-color: var(--accent);
+            border-bottom-right-radius: 0;
+        }
+        
+        .message-ai .message-content {
+            background-color: #1a1a1a;
+            border-bottom-left-radius: 0;
+            border: 1px solid #333;
+        }
+        
+        .message-ai .message-content::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -10px;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 0 10px 10px;
+            border-color: transparent transparent #1a1a1a transparent;
+        }
+        
+        .message-user .message-content::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: -10px;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 10px 10px 0;
+            border-color: transparent var(--accent) transparent transparent;
+        }
+        
+        .typing-indicator {
+            display: flex;
+            padding: 10px 15px;
+            background-color: #1a1a1a;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            width: fit-content;
+            border: 1px solid #333;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .typing-indicator.active {
+            opacity: 1;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--accent-light);
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) {
+            animation-delay: 0s;
+        }
+        
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        
+        .input-area {
+            display: flex;
+            padding: 15px;
+            background-color: #111;
+            border-top: 1px solid #333;
+        }
+        
+        .input-area textarea {
+            flex: 1;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            color: var(--text);
+            padding: 12px 15px;
+            border-radius: 5px;
+            resize: none;
+            height: 50px;
+            max-height: 150px;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+        
+        .input-area textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(110, 72, 170, 0.2);
+        }
+        
+        .send-btn {
+            background-color: var(--accent);
+            color: white;
+            border: none;
+            padding: 0 20px;
+            margin-left: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .send-btn:hover {
+            background-color: var(--accent-light);
+        }
+        
+        .send-btn:disabled {
+            background-color: #333;
+            cursor: not-allowed;
+        }
+        
+        .language-selector {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 10;
+        }
+        
+        .language-selector select {
+            background-color: #1a1a1a;
+            color: var(--text);
+            border: 1px solid #333;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        
+        .stream-toggle {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+        
+        .stream-toggle label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        
+        .stream-toggle input {
+            accent-color: var(--accent);
+        }
+        
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            background-color: var(--accent-light);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float 15s infinite linear;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            100% { transform: translateY(-100vh) rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .message-content {
+                max-width: 90%;
+            }
+            
+            .input-area {
+                flex-direction: column;
+            }
+            
+            .send-btn {
+                margin-left: 0;
+                margin-top: 10px;
+                padding: 10px;
+            }
+        }
+        
+        /* RTL adjustments */
+        html[dir="rtl"] .message-user {
+            justify-content: flex-start;
+        }
+        
+        html[dir="rtl"] .message-ai {
+            justify-content: flex-end;
+        }
+        
+        html[dir="rtl"] .message-user .message-content::after {
+            right: auto;
+            left: -10px;
+            border-width: 0 0 10px 10px;
+            border-color: transparent transparent var(--accent) transparent;
+        }
+        
+        html[dir="rtl"] .message-ai .message-content::before {
+            left: auto;
+            right: -10px;
+            border-width: 0 10px 10px 0;
+            border-color: transparent #1a1a1a transparent transparent;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="logo">
+                <h1>DarkAI</h1>
+                <span class="version">v2.0</span>
+            </div>
+            <div class="user-id" id="userId">User ID: 74458899</div>
+        </header>
+        
+        <div class="chat-container">
+            <div class="language-selector">
+                <select id="languageSelect">
+                    <option value="fa">فارسی</option>
+                    <option value="en">English</option>
+                    <option value="es">Español</option>
+                    <option value="fr">Français</option>
+                    <option value="de">Deutsch</option>
+                    <option value="ar">العربية</option>
+                </select>
+            </div>
+            
+            <div class="stream-toggle">
+                <input type="checkbox" id="streamToggle" checked>
+                <label for="streamToggle">حالت استریم</label>
+            </div>
+            
+            <div class="particles" id="particles"></div>
+            
+            <div class="chat-messages" id="chatMessages">
+                <div class="message message-ai">
+                    <div class="message-content">
+                        سلام! من DarkAI هستم، یک هوش مصنوعی پیشرفته. چگونه می‌توانم به شما کمک کنم؟
+                    </div>
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
+            
+            <div class="input-area">
+                <textarea id="userInput" placeholder="پیام خود را اینجا بنویسید..."></textarea>
+                <button id="sendBtn" class="send-btn">ارسال</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Generate random user ID
+            const userId = Math.floor(10000000 + Math.random() * 90000000);
+            document.getElementById('userId').textContent = `User ID: ${userId}`;
+            
+            // DOM elements
+            const chatMessages = document.getElementById('chatMessages');
+            const userInput = document.getElementById('userInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const typingIndicator = document.getElementById('typingIndicator');
+            const languageSelect = document.getElementById('languageSelect');
+            const streamToggle = document.getElementById('streamToggle');
+            
+            // Create particles
+            createParticles();
+            
+            // Send message on button click
+            sendBtn.addEventListener('click', sendMessage);
+            
+            // Send message on Enter key (without Shift)
+            userInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+            
+            // Auto-resize textarea
+            userInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+            });
+            
+            // Language change handler
+            languageSelect.addEventListener('change', function() {
+                const lang = this.value;
+                if (lang === 'fa' || lang === 'ar') {
+                    document.documentElement.dir = 'rtl';
+                } else {
+                    document.documentElement.dir = 'ltr';
+                }
+                
+                // Update placeholder based on language
+                const placeholders = {
+                    'fa': 'پیام خود را اینجا بنویسید...',
+                    'en': 'Type your message here...',
+                    'es': 'Escribe tu mensaje aquí...',
+                    'fr': 'Tapez votre message ici...',
+                    'de': 'Geben Sie hier Ihre Nachricht ein...',
+                    'ar': 'اكتب رسالتك هنا...'
+                };
+                userInput.placeholder = placeholders[lang] || placeholders['en'];
+            });
+            
+            async function sendMessage() {
+                const message = userInput.value.trim();
+                if (!message) return;
+                
+                // Add user message to chat
+                addMessage(message, 'user');
+                userInput.value = '';
+                userInput.style.height = '50px';
+                
+                // Show typing indicator
+                typingIndicator.classList.add('active');
+                sendBtn.disabled = true;
+                
+                try {
+                    const response = await fetchAIResponse(message, userId, streamToggle.checked);
+                    
+                    if (streamToggle.checked) {
+                        // Stream the response
+                        await streamResponse(response);
+                    } else {
+                        // Regular response
+                        const responseText = await response.text();
+                        addMessage(responseText, 'ai');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    addMessage('متاسفانه مشکلی در ارتباط با سرور پیش آمد. لطفاً دوباره تلاش کنید.', 'ai');
+                } finally {
+                    typingIndicator.classList.remove('active');
+                    sendBtn.disabled = false;
+                    scrollToBottom();
+                }
+            }
+            
+            async function fetchAIResponse(prompt, userId, stream) {
+                const url = "https://api.binjie.fun/api/generateStream";
+                const headers = {
+                    "authority": "api.binjie.fun",
+                    "accept": "application/json, text/plain, */*",
+                    "accept-encoding": "gzip, deflate, br",
+                    "accept-language": "en-US,en;q=0.9",
+                    "origin": "https://chat18.aichatos.xyz",
+                    "referer": "https://chat18.aichatos.xyz/",
+                    "user-agent": "Mozilla/5.0 (Windows NT 6.3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/105.0.0.0 Safari/537.36",
+                    "Content-Type": "application/json"
+                };
+                
+                const data = {
+                    "prompt": prompt,
+                    "userId": userId.toString(),
+                    "network": true,
+                    "system": "",
+                    "withoutContext": false,
+                    "stream": stream
+                };
+                
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return response;
+            }
+            
+            async function streamResponse(response) {
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let aiMessage = addMessage('', 'ai', true);
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value, { stream: true });
+                    aiMessage.textContent += chunk;
+                    scrollToBottom();
+                }
+            }
+            
+            function addMessage(text, sender, isStream = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message message-${sender}`;
+                
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content';
+                
+                if (isStream) {
+                    contentDiv.textContent = text;
+                } else {
+                    contentDiv.textContent = text;
+                }
+                
+                messageDiv.appendChild(contentDiv);
+                chatMessages.appendChild(messageDiv);
+                
+                if (!isStream) {
+                    scrollToBottom();
+                }
+                
+                return contentDiv;
+            }
+            
+            function scrollToBottom() {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+            
+            function createParticles() {
+                const particlesContainer = document.getElementById('particles');
+                const particleCount = 30;
+                
+                for (let i = 0; i < particleCount; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    
+                    // Random size between 2px and 5px
+                    const size = Math.random() * 3 + 2;
+                    particle.style.width = `${size}px`;
+                    particle.style.height = `${size}px`;
+                    
+                    // Random position
+                    particle.style.left = `${Math.random() * 100}%`;
+                    particle.style.top = `${Math.random() * 100}%`;
+                    
+                    // Random animation duration and delay
+                    const duration = Math.random() * 10 + 10;
+                    const delay = Math.random() * 5;
+                    particle.style.animation = `float ${duration}s ${delay}s infinite linear`;
+                    
+                    particlesContainer.appendChild(particle);
+                }
+            }
+            
+            // Initial greeting based on language
+            const greetings = {
+                'fa': 'سلام! من DarkAI هستم، یک هوش مصنوعی پیشرفته. چگونه می‌توانم به شما کمک کنم؟',
+                'en': 'Hello! I am DarkAI, an advanced AI. How can I assist you today?',
+                'es': '¡Hola! Soy DarkAI, una IA avanzada. ¿Cómo puedo ayudarte hoy?',
+                'fr': 'Bonjour ! Je suis DarkAI, une IA avancée. Comment puis-je vous aider aujourd\'hui ?',
+                'de': 'Hallo! Ich bin DarkAI, eine fortschrittliche KI. Wie kann ich Ihnen heute helfen?',
+                'ar': 'مرحبًا! أنا DarkAI، ذكاء اصطناعي متقدم. كيف يمكنني مساعدتك اليوم؟'
+            };
+            
+            // Set initial greeting
+            const initialLang = languageSelect.value;
+            document.querySelector('.message-ai .message-content').textContent = greetings[initialLang];
+        });
+    </script>
+</body>
+</html>
